@@ -2,12 +2,15 @@ import dotenv
 import json
 import os
 import string
+
 #
 from camel_converter import to_snake
 import snakemd
+
 #
 import streamlit as st
 from streamlit_chat import message
+
 #
 from langchain.chains import ConversationalRetrievalChain, LLMChain, RetrievalQA
 from langchain.chains.summarize import load_summarize_chain
@@ -18,10 +21,8 @@ from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import TokenTextSplitter
 from langchain.vectorstores import Chroma
-from langchain.schema import (
-    HumanMessage,
-    AIMessage
-)
+from langchain.schema import HumanMessage, AIMessage
+
 #
 
 #
@@ -51,7 +52,7 @@ st.session_state.analysis_complete = False
 if "rfp_text" not in st.session_state and sample_rfp_txt:
     st.session_state["rfp_text"] = sample_rfp_txt
 
-if 'messages' not in st.session_state:
+if "messages" not in st.session_state:
     st.session_state.messages = []
 
 #
@@ -73,45 +74,67 @@ def parse_numbered_list(text):
 #
 
 st.set_page_config(
-    page_title="RFP AI by Fuel Talent",
-    page_icon="🔥",
+    page_title="ProposalCrafter™",
+    page_icon="📑",
     layout="wide",
-    initial_sidebar_state="expanded",
 )
 
-#
-# Note that the following code is a bit funky because of the way Streamlit handles forms and state.
-# Streamlit is an immediate-mode framework, which means that the code is executed from top to bottom.
-# We want to process the RFP text on submit, but we also want to display the results of the analysis.
-# To do this, we use the `submit` variable to track whether the form has been submitted.
-#
-st.markdown(f"# RFP AI")
-st.markdown(f"by Fuel Talent")
+# Custom CSS
+with open("style.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-openai_api_key = st.sidebar.text_input('OpenAI API Key', type='password', key='openai_api_key', value=os.getenv('OPENAI_API_KEY'))
-if not openai_api_key.startswith('sk-'):
-    st.warning('Please enter your OpenAI API key', icon='⚠')
-    st.stop()
+st.markdown(
+    """
+<div class="header-container">
+  <img src="./app/static/hero.png" alt="ProposalCrafter" class="header-image">
+  <div class="header-text">
+    <h2>ProposalCrafter™</h2>
+    <p>Crafting Precision Proposals for Compelling Commitments</p>
+  </div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
+st.divider()
 
 #
 # Main form
 #
 
-with st.form('rfp_analysis_form'):
-    rfp_text = st.text_area('RFP text', height=200, key='rfp_text')
-    submit = st.form_submit_button('Analyze RFP')
+with st.form("rfp_analysis_form"):
+    rfp_text = st.text_area("RFP text", height=200, key="rfp_text")
+    submit = st.form_submit_button("Analyze RFP")
     if rfp_text:
         # setup LangChain
         if "qa_chain" not in st.session_state:
             with st.spinner("🤖 Initializing..."):
-                st.session_state.llm = ChatOpenAI(model=OPENAI_MODEL, openai_api_key=openai_api_key)
-                st.session_state.text_splitter = TokenTextSplitter(model_name="gpt-3.5-turbo", chunk_size=1000, chunk_overlap=0)
-                st.session_state.texts = st.session_state.text_splitter.split_text(rfp_text.strip())
-                st.session_state.docs = [Document(page_content=t) for t in st.session_state.texts]
-                st.session_state.embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-                st.session_state.vectorstore = Chroma.from_documents(st.session_state.docs, st.session_state.embeddings)
-                st.session_state.retriever = st.session_state.vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
-                st.session_state.qa_chain = RetrievalQA.from_chain_type(llm=st.session_state.llm, chain_type="stuff", retriever=st.session_state.retriever)
+                st.session_state.llm = ChatOpenAI(
+                    model=OPENAI_MODEL, openai_api_key=openai_api_key
+                )
+                st.session_state.text_splitter = TokenTextSplitter(
+                    model_name="gpt-3.5-turbo", chunk_size=1000, chunk_overlap=0
+                )
+                st.session_state.texts = st.session_state.text_splitter.split_text(
+                    rfp_text.strip()
+                )
+                st.session_state.docs = [
+                    Document(page_content=t) for t in st.session_state.texts
+                ]
+                st.session_state.embeddings = OpenAIEmbeddings(
+                    openai_api_key=openai_api_key
+                )
+                st.session_state.vectorstore = Chroma.from_documents(
+                    st.session_state.docs, st.session_state.embeddings
+                )
+                st.session_state.retriever = st.session_state.vectorstore.as_retriever(
+                    search_type="similarity", search_kwargs={"k": 5}
+                )
+                st.session_state.qa_chain = RetrievalQA.from_chain_type(
+                    llm=st.session_state.llm,
+                    chain_type="stuff",
+                    retriever=st.session_state.retriever,
+                )
 
                 doc = snakemd.new_doc()
                 st.session_state.analysis_doc = doc
@@ -121,7 +144,9 @@ if submit and "client_name" not in st.session_state:
         query = "What is the name of the client? Give your answer as just: <name>"
         client_name = st.session_state.qa_chain.run(query=query)
         st.session_state.client_name = client_name
-        st.session_state.analysis_doc.add_heading(f"RFP Analysis for {client_name}", level=1)
+        st.session_state.analysis_doc.add_heading(
+            f"RFP Analysis for {client_name}", level=1
+        )
         st.session_state.analysis_doc.add_paragraph("by Fuel Talent AI")
 
 if "client_name" in st.session_state:
@@ -141,7 +166,9 @@ if "client_description" in st.session_state:
 
 if submit and "summary" not in st.session_state:
     with st.spinner("🤖 Generating summary..."):
-        summary_chain = load_summarize_chain(st.session_state["llm"], chain_type="map_reduce")
+        summary_chain = load_summarize_chain(
+            st.session_state["llm"], chain_type="map_reduce"
+        )
         summary = summary_chain.run(st.session_state.docs)
         st.session_state.summary = summary
         st.session_state.analysis_doc.add_heading("Proposal Summary", level=2)
@@ -211,7 +238,9 @@ if "post_proposal_actions" in st.session_state:
 
 if submit and "technical_requirements" not in st.session_state:
     with st.spinner("🤖 Identifying technical requirements..."):
-        query = "What are the technical (software) requirements the client is asking for?"
+        query = (
+            "What are the technical (software) requirements the client is asking for?"
+        )
         technical_requirements = st.session_state.qa_chain.run(query=query)
         st.session_state.technical_requirements = technical_requirements
         st.session_state.analysis_doc.add_heading("Technical Requirements", level=2)
@@ -254,7 +283,7 @@ The moonshot idea should assume no technical or financial limitations and rely o
         partial_variables={
             "client_description": client_description,
             "summary": summary,
-            "technical_requirements": technical_requirements
+            "technical_requirements": technical_requirements,
         },
     )
     idea_chain = LLMChain(llm=st.session_state["llm"], prompt=prompt)
@@ -265,10 +294,7 @@ The moonshot idea should assume no technical or financial limitations and rely o
     for use_case in use_cases:  # [-1:]:
         with st.spinner(f"💡 Generating ideas for {use_case}"):
             ideas_text = idea_chain.run(use_case=use_case)
-            use_case_ideas.append({
-                "use_case": use_case,
-                "ideas_text": ideas_text
-            })
+            use_case_ideas.append({"use_case": use_case, "ideas_text": ideas_text})
             st.session_state.analysis_doc.add_heading(use_case, level=4)
             st.session_state.analysis_doc.add_paragraph(ideas_text)
         # st.markdown(f"#### {use_case}")
@@ -281,7 +307,9 @@ The moonshot idea should assume no technical or financial limitations and rely o
     doc_name = to_snake(st.session_state.client_name)
     doc_path = os.path.join(DATA_PATH, "analysis_doc.md")
     st.session_state.analysis_doc.dump(doc_name, doc_path)
-    texts = st.session_state.text_splitter.split_text(str(st.session_state.analysis_doc))
+    texts = st.session_state.text_splitter.split_text(
+        str(st.session_state.analysis_doc)
+    )
     st.session_state.vectorstore.add_texts(texts)
 
 if "use_case_ideas" in st.session_state:
@@ -308,8 +336,12 @@ if "use_case_ideas" in st.session_state:
 
 if "vectorstore" in st.session_state:
     with st.sidebar:
-        memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-        conv_qa_chain = ConversationalRetrievalChain.from_llm(st.session_state.llm, retriever=st.session_state.retriever, memory=memory)
+        memory = ConversationBufferMemory(
+            memory_key="chat_history", return_messages=True
+        )
+        conv_qa_chain = ConversationalRetrievalChain.from_llm(
+            st.session_state.llm, retriever=st.session_state.retriever, memory=memory
+        )
 
         # with st.sidebar:
         st.markdown("## Chat")
@@ -325,9 +357,9 @@ if "vectorstore" in st.session_state:
             st.session_state.messages.insert(1, AIMessage(content=response))
 
         # display message history
-        messages = st.session_state.get('messages', [])
+        messages = st.session_state.get("messages", [])
         for i, msg in enumerate(messages):
             if i % 2 == 0:
-                message(msg.content, is_user=True, key=str(i) + '_user')
+                message(msg.content, is_user=True, key=str(i) + "_user")
             else:
-                message(msg.content, is_user=False, key=str(i) + '_ai')
+                message(msg.content, is_user=False, key=str(i) + "_ai")
