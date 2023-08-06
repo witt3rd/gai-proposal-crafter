@@ -1,0 +1,9 @@
+camel_converter
+chromadb
+python-dotenv
+langchain
+openai
+snakemd
+streamlit
+streamlit-chat
+tiktoken
