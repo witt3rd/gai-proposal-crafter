@@ -163,4 +163,5 @@ cython_debug/
 #
 #
 .chroma/
-jobs/
+data/
+sample-rfp.txt

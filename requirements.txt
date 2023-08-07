@@ -3,6 +3,7 @@ chromadb
 python-dotenv
 langchain
 openai
+pysqlite3-binary
 snakemd
 streamlit
 streamlit-chat

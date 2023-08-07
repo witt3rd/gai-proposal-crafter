@@ -308,6 +308,8 @@ with tab1:
         #
         st.session_state.analysis_complete = True
         doc_name = to_snake(st.session_state.client_name)
+        # ensure dir exists
+        os.makedirs(get_config().DATA_DIR, exist_ok=True)
         doc_path = os.path.join(get_config().DATA_DIR, "analysis_doc.md")
         st.session_state.analysis_doc.dump(doc_name, doc_path)
         texts = st.session_state.text_splitter.split_text(

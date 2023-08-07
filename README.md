@@ -44,6 +44,23 @@ Create and activate a fresh Python virtual environment, then run:
 pip install -r requirements.txt
 ```
 
+#### Patching SQLITE3
+
+If you receive the following error:
+
+```bash
+RuntimeError: Your system has an unsupported version of sqlite3. Chroma requires sqlite3 >= 3.35.0.
+Please visit https://docs.trychroma.com/troubleshooting#sqlite to learn how to upgrade.
+```
+
+You may need to [patch](https://gist.github.com/defulmere/8b9695e415a44271061cc8e272f3c300?permalink_comment_id=4650539#gistcomment-4650539) the `chromadb` package, e.g., `/home/<user>/.pyenv/versions/3.11.4/envs/gai-proposal-crafter/lib/python3.11/site-packages/chromadb/__init__.py`:
+
+```python
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+```
+
 ### Running
 
 Start the [streamlit](https://streamlit.io/) auto-reload server:
